@@ -158,6 +158,220 @@ export default function App() {
     loop();
   };
 
+  const detectSquat = () => {
+    // Create a dictionary for easy access
+    const keypointsDict = {};
+    const keypointsAgain = poses[0].keypoints;
+    keypointsAgain?.forEach(kp => {
+      keypointsDict[kp.name] = kp;
+    });
+
+    // Function to calculate angle between three points
+    function calculateAngle(a, b, c) {
+      /**
+       * Calculates the angle at point B (in degrees) given three points A, B, and C.
+       * Each point is an object with 'x' and 'y' properties.
+       */
+      const ba = { x: a.x - b.x, y: a.y - b.y };
+      const bc = { x: c.x - b.x, y: c.y - b.y };
+
+      // Calculate the dot product and magnitude of vectors
+      const dotProduct = ba.x * bc.x + ba.y * bc.y;
+      const magnitudeBA = Math.hypot(ba.x, ba.y);
+      const magnitudeBC = Math.hypot(bc.x, bc.y);
+
+      // Avoid division by zero
+      if (magnitudeBA * magnitudeBC === 0) {
+        return null;
+      }
+
+      // Calculate the angle in radians and then convert to degrees
+      const angleRad = Math.acos(dotProduct / (magnitudeBA * magnitudeBC));
+      const angleDeg = (angleRad * 180.0) / Math.PI;
+
+      return angleDeg;
+    }
+
+    // Thresholds for squat detection
+    const KNEE_ANGLE_THRESHOLD = 90;  // degrees
+    const HIP_ANGLE_THRESHOLD = 120;  // degrees
+    const MIN_SCORE_THRESHOLD = 0.2;  // Minimum confidence score for keypoints
+
+    // Extract required keypoints (ensure they have a sufficient score)
+    function getKeypoint(name) {
+      const kp = keypointsDict[name];
+      if (kp && kp.score >= MIN_SCORE_THRESHOLD) {
+        return kp;
+      } else {
+        return null;
+      }
+    }
+
+    // Get keypoints
+    const left_hip = getKeypoint('left_hip');
+    const left_knee = getKeypoint('left_knee');
+    const left_ankle = getKeypoint('left_ankle');
+    const left_shoulder = getKeypoint('left_shoulder');
+
+    const right_hip = getKeypoint('right_hip');
+    const right_knee = getKeypoint('right_knee');
+    const right_ankle = getKeypoint('right_ankle');
+    const right_shoulder = getKeypoint('right_shoulder');
+
+    // Initialize variables
+    let squatDetected = false;
+
+    // Check left side
+    if (left_hip && left_knee && left_ankle) {
+      const left_knee_angle = calculateAngle(left_hip, left_knee, left_ankle);
+      let left_hip_angle = null;
+      if (left_shoulder) {
+        left_hip_angle = calculateAngle(left_shoulder, left_hip, left_knee);
+      }
+      console.log(left_knee_angle, left_hip_angle);
+      if (
+        left_knee_angle !== null && left_knee_angle < KNEE_ANGLE_THRESHOLD &&
+        left_hip_angle !== null && left_hip_angle < HIP_ANGLE_THRESHOLD
+      ) {
+        squatDetected = true;
+      }
+    }
+
+    // Check right side
+    if (right_hip && right_knee && right_ankle) {
+      const right_knee_angle = calculateAngle(right_hip, right_knee, right_ankle);
+      let right_hip_angle = null;
+      if (right_shoulder) {
+        right_hip_angle = calculateAngle(right_shoulder, right_hip, right_knee);
+      }
+      if (
+        right_knee_angle !== null && right_knee_angle < KNEE_ANGLE_THRESHOLD &&
+        right_hip_angle !== null && right_hip_angle < HIP_ANGLE_THRESHOLD
+      ) {
+        squatDetected = true;
+      }
+    }
+
+    // Output result
+    if (squatDetected) {
+      console.log("Squat detected");
+    } else {
+      console.log("No squat detected");
+    }}
+
+    const detectPushUp = () => {
+
+
+// Create a dictionary for easy access
+const keypointsDict = {};
+const keypoints = poses?.[0].keypoints;
+keypoints?.forEach(kp => {
+  keypointsDict[kp.name] = kp;
+});
+
+// Function to calculate angle between three points
+function calculateAngle(a, b, c) {
+  /**
+   * Calculates the angle at point B (in degrees) given three points A, B, and C.
+   * Each point is an object with 'x' and 'y' properties.
+   */
+  const ba = { x: a.x - b.x, y: a.y - b.y };
+  const bc = { x: c.x - b.x, y: c.y - b.y };
+
+  // Calculate the dot product and magnitude of vectors
+  const dotProduct = ba.x * bc.x + ba.y * bc.y;
+  const magnitudeBA = Math.hypot(ba.x, ba.y);
+  const magnitudeBC = Math.hypot(bc.x, bc.y);
+
+  // Avoid division by zero
+  if (magnitudeBA * magnitudeBC === 0) {
+    return null;
+  }
+
+  // Calculate the angle in radians and then convert to degrees
+  const angleRad = Math.acos(dotProduct / (magnitudeBA * magnitudeBC));
+  const angleDeg = (angleRad * 180.0) / Math.PI;
+
+  return angleDeg;
+}
+
+// Thresholds for push-up detection
+const ELBOW_ANGLE_THRESHOLD = 160;   // degrees (extended arm)
+const BODY_ALIGNMENT_THRESHOLD = 20; // degrees (straight body)
+const MIN_SCORE_THRESHOLD = 0.2;     // Minimum confidence score for keypoints
+
+// Extract required keypoints (ensure they have a sufficient score)
+function getKeypoint(name) {
+  const kp = keypointsDict[name];
+  if (kp && kp.score >= MIN_SCORE_THRESHOLD) {
+    return kp;
+  } else {
+    return null;
+  }
+}
+
+// Get keypoints
+const left_shoulder = getKeypoint('left_shoulder');
+const left_elbow = getKeypoint('left_elbow');
+const left_wrist = getKeypoint('left_wrist');
+const left_hip = getKeypoint('left_hip');
+const left_knee = getKeypoint('left_knee');
+const left_ankle = getKeypoint('left_ankle');
+
+const right_shoulder = getKeypoint('right_shoulder');
+const right_elbow = getKeypoint('right_elbow');
+const right_wrist = getKeypoint('right_wrist');
+const right_hip = getKeypoint('right_hip');
+const right_knee = getKeypoint('right_knee');
+const right_ankle = getKeypoint('right_ankle');
+
+// Initialize variables
+let pushupDetected = false;
+
+// Function to check if body is aligned (plank position)
+function isBodyAligned(shoulder, hip, ankle) {
+  const angle = calculateAngle(shoulder, hip, ankle);
+  if (angle !== null && Math.abs(angle - 180) < BODY_ALIGNMENT_THRESHOLD) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+// Check left side
+if (left_shoulder && left_elbow && left_wrist && left_hip && left_knee && left_ankle) {
+  const left_elbow_angle = calculateAngle(left_shoulder, left_elbow, left_wrist);
+  const left_body_aligned = isBodyAligned(left_shoulder, left_hip, left_ankle);
+
+  if (
+    left_elbow_angle !== null && left_elbow_angle > ELBOW_ANGLE_THRESHOLD &&
+    left_body_aligned
+  ) {
+    pushupDetected = true;
+  }
+}
+
+// Check right side
+if (right_shoulder && right_elbow && right_wrist && right_hip && right_knee && right_ankle) {
+  const right_elbow_angle = calculateAngle(right_shoulder, right_elbow, right_wrist);
+  const right_body_aligned = isBodyAligned(right_shoulder, right_hip, right_ankle);
+
+  if (
+    right_elbow_angle !== null && right_elbow_angle > ELBOW_ANGLE_THRESHOLD &&
+    right_body_aligned
+  ) {
+    pushupDetected = true;
+  }
+}
+
+// Output result
+if (pushupDetected) {
+  console.log("Push-up detected");
+} else {
+  console.log("No push-up detected");
+}
+    }
+
   const renderPose = () => {
     if (poses != null && poses.length > 0) {
       const keypoints = poses[0].keypoints
@@ -173,6 +387,8 @@ export default function App() {
           const cy =
             (y / getOutputTensorHeight()) *
             (isPortrait() ? CAM_PREVIEW_HEIGHT : CAM_PREVIEW_WIDTH);
+            detectSquat();
+detectPushUp();
           return (
             <Circle
               key={`skeletonkp_${k.name}`}
